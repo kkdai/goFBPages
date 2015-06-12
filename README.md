@@ -2,10 +2,6 @@ goFBPages
 ======================
 A facebook page photo album tool that supports concurrency download.
 
-fsrename separates the pattern option, therefore you can specify the pattern without typeing these character escapes.
-
-further, this tool supports concurrent renaming (powered by Go's channel and routine)
-
 Install
 --------------
 
