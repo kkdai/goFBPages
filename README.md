@@ -31,9 +31,9 @@ Options
 Examples
 ---------------
 
-Download all photos from Scottie Pippen facebook pages
+Download all photos from Scottie Pippen facebook pages with 10 workers.
 
-  goFBPages -n scottiepippen
+  goFBPages -n=scottiepippen -c=10
 
 
 Snapshot
@@ -59,9 +59,15 @@ This project inspired from [https://github.com/tzangms/iloveck101](https://githu
 
 Contribute
 ---------------
-Please open up an issue on GitHub before you put a lot efforts on pull request.
 
+Please open up an issue on GitHub before you put a lot efforts on pull request.
 The code submitting to PR must be filtered with `gofmt`
+
+
+Advertising
+---------------
+
+If you want to browse facebook page on your iPhone, why not check my App here :p [粉絲相簿](https://itunes.apple.com/tw/app/fen-si-xiang-bu/id839324997?l=zh&mt=8)
 
 License
 ---------------
