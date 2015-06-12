@@ -17,7 +17,6 @@ import (
 )
 
 var pageName = flag.String("n", "", "Facebook page name such as: scottiepippen")
-var pageId = flag.String("id", "", "Facebook page id, if you know such as: 112743018776863")
 var numOfWorkersPtr = flag.Int("c", 2, "the number of concurrent rename workers. default = 2")
 
 var m sync.Mutex
@@ -82,65 +81,66 @@ func DownloadWorker(destDir string, linkChan chan string, wg *sync.WaitGroup) {
 }
 
 func FindPhotoByAlbum(ownerName string, albumName string, albumId string, baseDir string) {
-	res2, err := fb.Get("/"+albumId+"/photos", fb.Params{
-		"access_token": TOKEN,
-	})
 	photoRet := FBPhotos{}
-
-	jret2, _ := json.Marshal(res2)
-	err = json.Unmarshal(jret2, &photoRet)
-	if err != nil {
-		fmt.Println(err)
-	}
-
+	resPhoto := RunFBGraphAPI("/" + albumId + "/photos")
+	ParseMapToStruct(resPhoto, &photoRet)
 	dir := fmt.Sprintf("%v/%v/%v - %v", baseDir, ownerName, albumId, albumName)
 	os.MkdirAll(dir, 0755)
-
 	linkChan := make(chan string)
 	wg := new(sync.WaitGroup)
 	for i := 0; i < 1; i++ {
 		wg.Add(1)
 		go DownloadWorker(dir, linkChan, wg)
 	}
-
 	for _, v := range photoRet.Data {
 		linkChan <- v.Source
 	}
-
 }
 
-func main() {
-	flag.Parse()
-	var inputPage string
-	if *pageName == "" && *pageId == "" {
-		log.Fatalln("You need to input either -n=page or -id=pageid.")
-	} else if *pageName != "" && *pageId != "" {
-		log.Fatalln("You can only input either -n=page or -id=pageid.")
-	} else if *pageName != "" {
-		inputPage = *pageName
-	} else {
-		inputPage = *pageId
+func ParseMapToStruct(inData interface{}, decodeStruct interface{}) {
+	jret, _ := json.Marshal(inData)
+	err := json.Unmarshal(jret, &decodeStruct)
+	if err != nil {
+		log.Fatalln(err)
 	}
+}
 
-	usr, _ := user.Current()
-	baseDir := fmt.Sprintf("%v/Pictures/goFBPages", usr.HomeDir)
-	res, err := fb.Get("/"+inputPage+"/albums", fb.Params{
+func RunFBGraphAPI(query string) (queryResult interface{}) {
+	res, err := fb.Get(query, fb.Params{
 		"access_token": TOKEN,
 	})
 
 	if err != nil {
 		log.Fatalln("FB connect error, err=", err.Error())
 	}
+	return res
+}
 
-	albumRet := FBAlbums{}
-	jret, _ := json.Marshal(res)
-	err = json.Unmarshal(jret, &albumRet)
-	if err != nil {
-		fmt.Println(err)
+func main() {
+	flag.Parse()
+	var inputPage string
+	if *pageName == "" {
+		log.Fatalln("You need to input -n=Name_or_Id.")
 	}
+	inputPage = *pageName
 
+	//Get system user folder
+	usr, _ := user.Current()
+	baseDir := fmt.Sprintf("%v/Pictures/goFBPages", usr.HomeDir)
+
+	//Get User info
+	resUser := RunFBGraphAPI("/" + inputPage)
+	userRet := FBUser{}
+	ParseMapToStruct(resUser, &userRet)
+
+	//Get all albums
+	resAlbums := RunFBGraphAPI("/" + inputPage + "/albums")
+	albumRet := FBAlbums{}
+	ParseMapToStruct(resAlbums, &albumRet)
+
+	userFolderName := fmt.Sprintf("[%s]%s", userRet.Username, userRet.Name)
 	for _, v := range albumRet.Data {
-		fmt.Println("Starting downloading " + v.Name + "-" + v.From.Name)
-		FindPhotoByAlbum(v.From.Name, v.Name, v.ID, baseDir)
+		fmt.Println("Starting download [" + v.Name + "]-" + v.From.Name)
+		FindPhotoByAlbum(userFolderName, v.Name, v.ID, baseDir)
 	}
 }

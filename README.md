@@ -23,9 +23,8 @@ All the photos will download to `USERS/Pictures/goFBPages` and it will separate 
 Options
 ---------------
 
-- `-n` Facebook page name such as: [scottiepippen](https://www.facebook.com/scottiepippen).
-- `-id` Facebook page id, if you know such as: 112743018776863 
-- `-c=2` number of workers. (concurrency)
+- `-n` Facebook page name such as: [scottiepippen](https://www.facebook.com/scottiepippen), or input facebook id if you know such as 112743018776863 
+- `-c` number of workers. (concurrency), default workers is "2"
 
 
 Examples
