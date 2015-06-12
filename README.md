@@ -18,8 +18,7 @@ Usage
 
     goFBPages [options] 
 
-When [path...] is not given, "./" will be used as the default path for scanning files.
-
+All the photos will download to `USERS/Pictures/goFBPages` and it will separate folder by page name and album name.
 
 Options
 ---------------
@@ -47,6 +46,7 @@ TODOs
 
 - Support specific album download.
 - Support firend/self album download for backup.
+- Support CLI to select which album you want to download.
 
 Inspired
 ---------------
