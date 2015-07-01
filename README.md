@@ -9,9 +9,9 @@ Install
 
     go get -u -x github.com/kkdai/goFBPages
 
-Note, you need go to [faceook developer page](https://developers.facebook.com/tools/explorer?method=GET&path=me) to get latest token and update in "conf.json".
+Note, you need go to [faceook developer page](https://developers.facebook.com/tools/explorer?method=GET&path=me) to get latest token and update in environment variables.
 
-     TOKEN : "YOUR_TOKEN_HERE"
+     export FBTOKEN = "YOUR_TOKEN_HERE"
 
 Usage
 ---------------------
@@ -62,6 +62,10 @@ Contribute
 Please open up an issue on GitHub before you put a lot efforts on pull request.
 The code submitting to PR must be filtered with `gofmt`
 
+Related Project
+---------------
+
+An Instagram photo downloader also here. [https://github.com/kkdai/goInstagramDownloader](https://github.com/kkdai/goInstagramDownloader)
 
 Advertising
 ---------------

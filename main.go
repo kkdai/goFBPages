@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	fb "github.com/huandu/facebook"
 	"image"
 	"image/jpeg"
 	"image/png"
@@ -14,6 +13,8 @@ import (
 	"os/user"
 	"strings"
 	"sync"
+
+	fb "github.com/huandu/facebook"
 )
 
 var pageName = flag.String("n", "", "Facebook page name such as: scottiepippen")
@@ -33,8 +34,7 @@ func GetFileIndex() (ret int) {
 var TOKEN string
 
 func init() {
-	cfg := LoadConfig()
-	TOKEN = cfg.Token
+	TOKEN = os.Getenv("FBTOKEN")
 }
 
 func DownloadWorker(destDir string, linkChan chan string, wg *sync.WaitGroup) {
@@ -119,6 +119,10 @@ func RunFBGraphAPI(query string) (queryResult interface{}) {
 func main() {
 	flag.Parse()
 	var inputPage string
+	if TOKEN == "" {
+		log.Fatalln("Set your FB token as environment variables 'export FBTOKEN=XXXXXXX'")
+	}
+
 	if *pageName == "" {
 		log.Fatalln("You need to input -n=Name_or_Id.")
 	}
