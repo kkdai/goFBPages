@@ -1,5 +1,10 @@
 package main
 
+type DLData struct {
+	ImageURL string
+	ImageID  string
+}
+
 type FBUser struct {
 	ID       string `json:"id"`
 	About    string `json:"about"`

@@ -19,53 +19,41 @@ import (
 
 var pageName = flag.String("n", "", "Facebook page name such as: scottiepippen")
 var numOfWorkersPtr = flag.Int("c", 2, "the number of concurrent rename workers. default = 2")
-
 var m sync.Mutex
-var FileIndex int = 0
-
-func GetFileIndex() (ret int) {
-	m.Lock()
-	ret = FileIndex
-	FileIndex = FileIndex + 1
-	m.Unlock()
-	return ret
-}
-
 var TOKEN string
 
 func init() {
 	TOKEN = os.Getenv("FBTOKEN")
 }
 
-func DownloadWorker(destDir string, linkChan chan string, wg *sync.WaitGroup) {
+func DownloadWorker(destDir string, linkChan chan DLData, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	for target := range linkChan {
 		var imageType string
-		if strings.Contains(target, ".png") {
+		if strings.Contains(target.ImageURL, ".png") {
 			imageType = ".png"
 		} else {
 			imageType = ".jpg"
 		}
 
-		resp, err := http.Get(target)
+		resp, err := http.Get(target.ImageURL)
 		if err != nil {
-			log.Println("Http.Get\nerror: " + err.Error() + "\ntarget: " + target)
+			log.Println("Http.Get\nerror: " + err.Error() + "\ntarget: " + target.ImageURL)
 			continue
 		}
 		defer resp.Body.Close()
 
 		m, _, err := image.Decode(resp.Body)
 		if err != nil {
-			log.Println("image.Decode\nerror: " + err.Error() + "\ntarget: " + target)
+			log.Println("image.Decode\nerror: " + err.Error() + "\ntarget: " + target.ImageURL)
 			continue
 		}
 
 		// Ignore small images
 		bounds := m.Bounds()
 		if bounds.Size().X > 300 && bounds.Size().Y > 300 {
-			imgInfo := fmt.Sprintf("pic%04d", GetFileIndex())
-			out, err := os.Create(destDir + "/" + imgInfo + imageType)
+			out, err := os.Create(destDir + "/" + target.ImageID + imageType)
 			if err != nil {
 				log.Println("os.Create\nerror: %s", err)
 				continue
@@ -80,20 +68,24 @@ func DownloadWorker(destDir string, linkChan chan string, wg *sync.WaitGroup) {
 	}
 }
 
-func FindPhotoByAlbum(ownerName string, albumName string, albumId string, baseDir string) {
+func FindPhotoByAlbum(ownerName string, albumName string, albumId string, baseDir string, photoCount int) {
 	photoRet := FBPhotos{}
-	resPhoto := RunFBGraphAPI("/" + albumId + "/photos")
+	queryString := fmt.Sprintf("/%s/photos?limit=%d", albumId, photoCount)
+	resPhoto := RunFBGraphAPI(queryString)
 	ParseMapToStruct(resPhoto, &photoRet)
 	dir := fmt.Sprintf("%v/%v/%v - %v", baseDir, ownerName, albumId, albumName)
 	os.MkdirAll(dir, 0755)
-	linkChan := make(chan string)
+	linkChan := make(chan DLData)
 	wg := new(sync.WaitGroup)
 	for i := 0; i < 1; i++ {
 		wg.Add(1)
 		go DownloadWorker(dir, linkChan, wg)
 	}
 	for _, v := range photoRet.Data {
-		linkChan <- v.Source
+		dlChan := DLData{}
+		dlChan.ImageID = v.ID
+		dlChan.ImageURL = v.Source
+		linkChan <- dlChan
 	}
 }
 
@@ -145,6 +137,6 @@ func main() {
 	userFolderName := fmt.Sprintf("[%s]%s", userRet.Username, userRet.Name)
 	for _, v := range albumRet.Data {
 		fmt.Println("Starting download [" + v.Name + "]-" + v.From.Name)
-		FindPhotoByAlbum(userFolderName, v.Name, v.ID, baseDir)
+		FindPhotoByAlbum(userFolderName, v.Name, v.ID, baseDir, v.Count)
 	}
 }
