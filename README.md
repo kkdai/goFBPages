@@ -56,6 +56,12 @@ This project inspired from [https://github.com/tzangms/iloveck101](https://githu
 - Photo download: [https://github.com/lazywei/iloveck101](https://github.com/lazywei/iloveck101)
 
 
+Project52
+---------------
+
+It is one of my [project 52](https://github.com/kkdai/project52).
+
+
 Contribute
 ---------------
 
