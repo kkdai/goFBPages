@@ -68,9 +68,17 @@ func DownloadWorker(destDir string, linkChan chan DLData, wg *sync.WaitGroup) {
 	}
 }
 
-func FindPhotoByAlbum(ownerName string, albumName string, albumId string, baseDir string, photoCount int) {
+func FindPhotoByAlbum(ownerName string, albumName string, albumId string, baseDir string, photoCount int, photoOffset int) {
 	photoRet := FBPhotos{}
-	queryString := fmt.Sprintf("/%s/photos?limit=%d", albumId, photoCount)
+	var queryString string
+	if photoOffset > 0 {
+		queryString = fmt.Sprintf("/%s/photos?limit=%d&offset=%d", albumId, photoCount, photoOffset)
+
+	} else {
+		queryString = fmt.Sprintf("/%s/photos?limit=%d", albumId, photoCount)
+	}
+	log.Println("QStr=", queryString)
+
 	resPhoto := RunFBGraphAPI(queryString)
 	ParseMapToStruct(resPhoto, &photoRet)
 	dir := fmt.Sprintf("%v/%v/%v - %v", baseDir, ownerName, albumId, albumName)
@@ -134,9 +142,25 @@ func main() {
 	albumRet := FBAlbums{}
 	ParseMapToStruct(resAlbums, &albumRet)
 
+	//use limit to avoid error: Please reduce the amount of data you're asking for, then retry your request
+	//Curently 30 is a magic number of FB Graph API call, 50 will still occur failed.  >_<
+	maxCount := 30
+
 	userFolderName := fmt.Sprintf("[%s]%s", userRet.Username, userRet.Name)
 	for _, v := range albumRet.Data {
-		fmt.Println("Starting download [" + v.Name + "]-" + v.From.Name)
-		FindPhotoByAlbum(userFolderName, v.Name, v.ID, baseDir, v.Count)
+		fmt.Println("Starting download ["+v.Name+"]-"+v.From.Name, " total count:", v.Count)
+
+		if v.Count > maxCount {
+			currentOffset := 0
+			for {
+				if currentOffset > v.Count {
+					break
+				}
+				FindPhotoByAlbum(userFolderName, v.Name, v.ID, baseDir, maxCount, currentOffset)
+				currentOffset = currentOffset + maxCount
+			}
+		} else {
+			FindPhotoByAlbum(userFolderName, v.Name, v.ID, baseDir, v.Count, 0)
+		}
 	}
 }
