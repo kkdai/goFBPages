@@ -77,7 +77,6 @@ func FindPhotoByAlbum(ownerName string, albumName string, albumId string, baseDi
 	} else {
 		queryString = fmt.Sprintf("/%s/photos?limit=%d", albumId, photoCount)
 	}
-	log.Println("QStr=", queryString)
 
 	resPhoto := RunFBGraphAPI(queryString)
 	ParseMapToStruct(resPhoto, &photoRet)
