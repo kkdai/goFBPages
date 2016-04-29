@@ -26,7 +26,7 @@ func init() {
 	TOKEN = os.Getenv("FBTOKEN")
 }
 
-func DownloadWorker(destDir string, linkChan chan DLData, wg *sync.WaitGroup) {
+func downloadWorker(destDir string, linkChan chan DLData, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	for target := range linkChan {
@@ -68,7 +68,7 @@ func DownloadWorker(destDir string, linkChan chan DLData, wg *sync.WaitGroup) {
 	}
 }
 
-func FindPhotoByAlbum(ownerName string, albumName string, albumId string, baseDir string, photoCount int, photoOffset int) {
+func findPhotoByAlbum(ownerName string, albumName string, albumId string, baseDir string, photoCount int, photoOffset int) {
 	photoRet := FBPhotos{}
 	var queryString string
 	if photoOffset > 0 {
@@ -78,15 +78,15 @@ func FindPhotoByAlbum(ownerName string, albumName string, albumId string, baseDi
 		queryString = fmt.Sprintf("/%s/photos?limit=%d", albumId, photoCount)
 	}
 
-	resPhoto := RunFBGraphAPI(queryString)
-	ParseMapToStruct(resPhoto, &photoRet)
+	resPhoto := runFBGraphAPI(queryString)
+	parseMapToStruct(resPhoto, &photoRet)
 	dir := fmt.Sprintf("%v/%v/%v - %v", baseDir, ownerName, albumId, albumName)
 	os.MkdirAll(dir, 0755)
 	linkChan := make(chan DLData)
 	wg := new(sync.WaitGroup)
 	for i := 0; i < 1; i++ {
 		wg.Add(1)
-		go DownloadWorker(dir, linkChan, wg)
+		go downloadWorker(dir, linkChan, wg)
 	}
 	for _, v := range photoRet.Data {
 		dlChan := DLData{}
@@ -96,7 +96,7 @@ func FindPhotoByAlbum(ownerName string, albumName string, albumId string, baseDi
 	}
 }
 
-func ParseMapToStruct(inData interface{}, decodeStruct interface{}) {
+func parseMapToStruct(inData interface{}, decodeStruct interface{}) {
 	jret, _ := json.Marshal(inData)
 	err := json.Unmarshal(jret, &decodeStruct)
 	if err != nil {
@@ -104,7 +104,7 @@ func ParseMapToStruct(inData interface{}, decodeStruct interface{}) {
 	}
 }
 
-func RunFBGraphAPI(query string) (queryResult interface{}) {
+func runFBGraphAPI(query string) (queryResult interface{}) {
 	res, err := fb.Get(query, fb.Params{
 		"access_token": TOKEN,
 	})
@@ -132,14 +132,14 @@ func main() {
 	baseDir := fmt.Sprintf("%v/Pictures/goFBPages", usr.HomeDir)
 
 	//Get User info
-	resUser := RunFBGraphAPI("/" + inputPage)
+	resUser := runFBGraphAPI("/" + inputPage)
 	userRet := FBUser{}
-	ParseMapToStruct(resUser, &userRet)
+	parseMapToStruct(resUser, &userRet)
 
 	//Get all albums
-	resAlbums := RunFBGraphAPI("/" + inputPage + "/albums")
+	resAlbums := runFBGraphAPI("/" + inputPage + "/albums")
 	albumRet := FBAlbums{}
-	ParseMapToStruct(resAlbums, &albumRet)
+	parseMapToStruct(resAlbums, &albumRet)
 
 	//use limit to avoid error: Please reduce the amount of data you're asking for, then retry your request
 	//Curently 30 is a magic number of FB Graph API call, 50 will still occur failed.  >_<
@@ -155,11 +155,11 @@ func main() {
 				if currentOffset > v.Count {
 					break
 				}
-				FindPhotoByAlbum(userFolderName, v.Name, v.ID, baseDir, maxCount, currentOffset)
+				findPhotoByAlbum(userFolderName, v.Name, v.ID, baseDir, maxCount, currentOffset)
 				currentOffset = currentOffset + maxCount
 			}
 		} else {
-			FindPhotoByAlbum(userFolderName, v.Name, v.ID, baseDir, v.Count, 0)
+			findPhotoByAlbum(userFolderName, v.Name, v.ID, baseDir, v.Count, 0)
 		}
 	}
 }
